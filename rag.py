@@ -33,20 +33,20 @@ def _chunk(text: str) -> list[str]:
 def add_document(filepath: str) -> int:
     text = _read_file(filepath)
 
-    filename = os.path.basename(filepath)
-    prefix = hashlib.md5(filename.encode()).hexdigest()[:8]
+    source = os.path.abspath(filepath)
+    prefix = hashlib.md5(source.encode()).hexdigest()[:8]
     chunks = _chunk(text)
 
     col = _collection()
 
-    existing = col.get(where={"source": filename})
+    existing = col.get(where={"source": source})
     if existing["ids"]:
         col.delete(ids=existing["ids"])
 
     col.add(
         ids=[f"{prefix}_c{i}" for i in range(len(chunks))],
         documents=chunks,
-        metadatas=[{"source": filename, "chunk": i} for i in range(len(chunks))],
+        metadatas=[{"source": source, "chunk": i} for i in range(len(chunks))],
     )
     return len(chunks)
 
@@ -65,4 +65,4 @@ def list_documents() -> list[str]:
     data = col.get()
     if not data["metadatas"]:
         return []
-    return sorted({m["source"] for m in data["metadatas"]})
+    return sorted({m["source"] for m in data["metadatas"]}, key=os.path.basename)
