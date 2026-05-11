@@ -7,6 +7,15 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 import config
 
 
+def _read_file(filepath: str) -> str:
+    if filepath.lower().endswith(".pdf"):
+        from pypdf import PdfReader
+        reader = PdfReader(filepath)
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    with open(filepath, encoding="utf-8") as f:
+        return f.read()
+
+
 def _collection():
     client = chromadb.PersistentClient(path=config.CHROMA_PATH)
     ef = SentenceTransformerEmbeddingFunction(model_name=config.EMBED_MODEL)
@@ -22,8 +31,7 @@ def _chunk(text: str) -> list[str]:
 
 
 def add_document(filepath: str) -> int:
-    with open(filepath, encoding="utf-8") as f:
-        text = f.read()
+    text = _read_file(filepath)
 
     filename = os.path.basename(filepath)
     prefix = hashlib.md5(filename.encode()).hexdigest()[:8]
