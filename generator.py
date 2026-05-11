@@ -1,3 +1,5 @@
+import time
+
 import ollama
 import config
 
@@ -42,11 +44,35 @@ def generate(job_description: str, context_chunks: list[str], capture: bool = Fa
     )
 
     parts: list[str] = []
-    for chunk in stream:
-        token = chunk["message"]["content"]
-        print(token, end="", flush=True)
-        if capture:
-            parts.append(token)
+    start = time.time()
+    last_chunk = None
 
-    print()
-    return "".join(parts) if capture else None
+    for chunk in stream:
+        parts.append(chunk["message"]["content"])
+        last_chunk = chunk
+        elapsed = time.time() - start
+        rate = len(parts) / elapsed if elapsed > 0 else 0
+        print(
+            f"\r  {len(parts)} tokens | {rate:.1f} tok/s | {elapsed:.0f}s elapsed   ",
+            end="",
+            flush=True,
+        )
+
+    # Use Ollama's reported counts if available (more accurate than chunk count)
+    if last_chunk:
+        eval_count = last_chunk.get("eval_count", len(parts))
+        eval_duration_ns = last_chunk.get("eval_duration", 0)
+        if eval_duration_ns > 0:
+            final_rate = eval_count / (eval_duration_ns / 1e9)
+        else:
+            elapsed = time.time() - start
+            final_rate = eval_count / elapsed if elapsed > 0 else 0
+        total_elapsed = (last_chunk.get("total_duration", 0) or 0) / 1e9 or (time.time() - start)
+        print(f"\r  Done: {eval_count} tokens in {total_elapsed:.1f}s ({final_rate:.1f} tok/s)        ")
+    else:
+        print()
+
+    letter = "".join(parts)
+    print(letter)
+
+    return letter if capture else None
