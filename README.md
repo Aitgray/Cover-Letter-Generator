@@ -5,7 +5,7 @@ Generates tailored cover letters using a locally-running LLM via Ollama. Uses RA
 ## Prerequisites
 
 - [Ollama](https://ollama.com) running locally
-- Your preferred model pulled, e.g. `ollama pull qwen2.5:27b`
+- Your preferred model pulled, e.g. `ollama pull qwen3.5:27b`
 - Python 3.11+
 
 ## Installation
